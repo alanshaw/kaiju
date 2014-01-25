@@ -1,11 +1,14 @@
-var five = require("johnny-five"),
-  board, lcd
+var five = require("johnny-five")
+  , moment = require("moment")
 
-board = new five.Board()
+var board = new five.Board()
 
 board.on("ready", function () {
 
-  lcd = new five.LCD({
+  var last = moment() // Last time a high 5
+    , lastOut = "" // Last moment from text
+
+  var lcd = new five.LCD({
     // LCD pin name  RS  EN  DB4 DB5 DB6 DB7
     // Arduino pin # 7    8   9   10  11  12
     pins: [8, 9, 4, 5, 6, 7]
@@ -17,23 +20,27 @@ board.on("ready", function () {
   })
 
   lcd.on("ready", function () {
-    // Tell the LCD you will use the heart character
-    lcd.useChar("check")
-    lcd.useChar("heart")
-    lcd.useChar("duck")
 
-    // Line 1: Hi rmurphey & hgstrp!
-    lcd.clear().print("rmurphey, hgstrp")
-    lcd.cursor(1, 0)
+    // Turn the lights on
+    lcd.board.digitalWrite(10, lcd.board.io.HIGH)
 
-    // Line 2: I <3 johnny-five
-    // lcd.print("I").write(7).print(" johnny-five")
-    // can now be written as:
-    lcd.print("I :heart: johnny-five")
+    // Update the display
+    setInterval(function () {
+      var out = last.from(moment())
+      if (out == lastOut) return
 
-    setTimeout(function () {
-      lcd.clear().cursor(0, 0).print("I :check::heart: 2 :duck: :)")
-    }, 3000)
+      console.log(out)
+      lcd.clear().cursor(0, 0).print("Last high 5:").cursor(1, 0).print(out)
+      lastOut = out
+    }, 50)
+  })
+
+  // Reset the last time when button pressed
+  var reset = new five.Button(3)
+
+  reset.on("up", function () {
+    last = moment()
+    lastOut = ""
   })
 
   this.repl.inject({
